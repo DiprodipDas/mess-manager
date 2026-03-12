@@ -1,45 +1,78 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Pages
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Meals from './pages/Meals';
 import Expenses from './pages/Expenses';
 import Reports from './pages/Reports';
+import GuestMeals from './pages/GuestMeals';
+import Notifications from './pages/Notifications';
+import ExportReports from './pages/ExportReports';
+import Analytics from './pages/Analytics';
+
+// Components
+import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute';
+
+function AppContent() {
+    const { isAuthenticated, loading } = useAuth();
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    return (
+        <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+            <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
+
+            {/* Protected routes */}
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+                <Route index element={<Dashboard />} />
+                <Route path="users" element={<Users />} />
+                <Route path="meals" element={<Meals />} />
+                <Route path="expenses" element={<Expenses />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="guest-meals" element={<GuestMeals />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="export" element={<ExportReports />} />
+                <Route path="analytics" element={<Analytics />} />
+            </Route>
+        </Routes>
+    );
+}
 
 function App() {
     return (
-        <Router>
-            <div className="min-h-screen bg-gray-100">
-                {/* Navigation Bar */}
-                <nav className="bg-blue-600 text-white shadow-lg">
-                    <div className="max-w-full mx-auto px-4">
-                        <div className="flex justify-between items-center h-16">
-                            <div className="flex space-x-4">
-                                <Link to="/" className="px-3 py-2 rounded hover:bg-blue-700">Dashboard</Link>
-                                <Link to="/users" className="px-3 py-2 rounded hover:bg-blue-700">Users</Link>
-                                <Link to="/meals" className="px-3 py-2 rounded hover:bg-blue-700">Meals</Link>
-                                <Link to="/expenses" className="px-3 py-2 rounded hover:bg-blue-700">Expenses</Link>
-                                <Link to="/reports" className="px-3 py-2 rounded hover:bg-blue-700">Reports</Link>
-                            </div>
-                            <div className="text-lg font-bold">
-                                Mess Management System
-                            </div>
-                        </div>
-                    </div>
-                </nav>
-
-                {/* Main Content */}
-                <div className="max-w-full px-4 py-6">
-                    <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/users" element={<Users />} />
-                        <Route path="/meals" element={<Meals />} />
-                        <Route path="/expenses" element={<Expenses />} />
-                        <Route path="/reports" element={<Reports />} />
-                    </Routes>
-                </div>
-            </div>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <AppContent />
+                <ToastContainer 
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="colored"
+                />
+            </Router>
+        </AuthProvider>
     );
 }
 
