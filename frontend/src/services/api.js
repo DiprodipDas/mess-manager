@@ -9,6 +9,23 @@ const api = axios.create({
     },
 });
 
+// Add token to every request automatically
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+            console.log('✅ Token added to request:', config.url);
+        } else {
+            console.log('⚠️ No token found for request:', config.url);
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
 // User services
 export const userService = {
     getAll: () => api.get('/users'),
@@ -67,5 +84,7 @@ export const exportService = {
 export const analyticsService = {
     getAnalytics: (timeframe) => api.get('/analytics', { params: { timeframe } }),
 };
+
+
 
 export default api;

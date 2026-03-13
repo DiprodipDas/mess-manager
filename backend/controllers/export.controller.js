@@ -1,6 +1,13 @@
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
+import fs from 'fs'; // Add this
+import path from 'path'; // Add this
+import { fileURLToPath } from 'url'; // Add this
 import pool from '../config/db.config.js';
+
+// Add these lines to get the directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const exportToExcel = async (req, res) => {
     try {
@@ -14,7 +21,7 @@ export const exportToExcel = async (req, res) => {
 
         // Add summary sheet
         const summarySheet = workbook.addWorksheet('Summary');
-        
+
         // Get summary data
         const [summary] = await pool.query(
             `SELECT * FROM monthly_summary WHERE month_year = ?`,
@@ -32,7 +39,7 @@ export const exportToExcel = async (req, res) => {
         summarySheet.addRow([]);
         summarySheet.addRow(['Metric', 'Value']);
         summarySheet.getRow(3).font = { bold: true };
-        
+
         if (summary.length > 0) {
             summarySheet.addRow(['Total Meals', summary[0].total_meals]);
             summarySheet.addRow(['Total Expense', summary[0].total_expense]);
@@ -47,7 +54,7 @@ export const exportToExcel = async (req, res) => {
         // Add expenses sheet
         if (type === 'expenses' || !type) {
             const expenseSheet = workbook.addWorksheet('Expenses');
-            
+
             const [expenses] = await pool.query(
                 `SELECT e.*, u.name as purchased_by_name 
                  FROM expenses e
@@ -131,11 +138,32 @@ export const exportToPDF = async (req, res) => {
 
         // Create PDF document
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
-        
+
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=mess-report-${monthYear}.pdf`);
 
         doc.pipe(res);
+
+        // 🔴 IMPORTANT: Register and use the Bengali font
+         const fontPath = path.join(__dirname, '..', 'fonts', 'NotoSansBengali-Regular.ttf');
+
+        // Check if font exists
+        if (fs.existsSync(fontPath)) {
+            console.log('✅ Bengali font found, registering...');
+            doc.registerFont('Bengali', fontPath);
+            doc.font('Bengali');
+        } else {
+            console.log('⚠️ Bengali font not found, using Helvetica');
+            doc.font('Helvetica');
+        }
+
+        // Helper function to format currency properly
+        const formatCurrency = (amount) => {
+            const num = parseFloat(amount);
+            if (isNaN(num)) return '৳0.00';
+            // Use 'Tk' as fallback if Bengali font fails
+            return `৳${num.toFixed(2)}`; // or use 'Tk' if you prefer: return `Tk ${num.toFixed(2)}`;
+        };
 
         // Header
         doc.fontSize(20).text('Mess Management Report', { align: 'center' });
@@ -145,11 +173,20 @@ export const exportToPDF = async (req, res) => {
         // Summary section
         doc.fontSize(16).text('Summary', { underline: true });
         doc.moveDown(0.5);
-        
+
         if (summary.length > 0) {
             doc.fontSize(12).text(`Total Meals: ${summary[0].total_meals}`);
-            doc.text(`Total Expense: ৳${summary[0].total_expense}`);
-            doc.text(`Meal Rate: ৳${summary[0].meal_rate}`);
+            doc.text(`Total Expense: ${formatCurrency(summary[0].total_expense)}`);
+            doc.text(`Meal Rate: ${formatCurrency(summary[0].meal_rate)}`);
+        } else {
+            // If no summary, calculate from raw data
+            const totalMeals = userSummary.reduce((sum, u) => sum + u.meal_count, 0);
+            const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
+            const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
+
+            doc.fontSize(12).text(`Total Meals: ${totalMeals}`);
+            doc.text(`Total Expense: ${formatCurrency(totalExpense)}`);
+            doc.text(`Meal Rate: ${formatCurrency(mealRate)}`);
         }
         doc.moveDown();
 
@@ -167,42 +204,77 @@ export const exportToPDF = async (req, res) => {
         doc.moveDown(0.5);
 
         // Table headers
-        const tableTop = doc.y;
-        doc.fontSize(10).text('Date', 50, tableTop);
-        doc.text('Item', 120, tableTop);
-        doc.text('Price', 300, tableTop);
-        doc.text('By', 380, tableTop);
+        const startX = 50;
+        let currentY = doc.y;
+
+        doc.fontSize(10).font('Helvetica-Bold'); // Use Helvetica for headers
+        doc.text('Date', startX, currentY);
+        doc.text('Item', startX + 80, currentY);
+        doc.text('Price', startX + 250, currentY);
+        doc.text('By', startX + 330, currentY);
 
         doc.moveDown();
-        let y = doc.y;
+        currentY = doc.y;
+
+        // Table rows - switch back to Bengali font if available
+        if (fs.existsSync(fontPath)) {
+            doc.font('Bengali');
+        } else {
+            doc.font('Helvetica');
+        }
+        doc.fontSize(9);
 
         expenses.forEach((expense, i) => {
-            if (y > 700) {
+            if (currentY > 700) {
                 doc.addPage();
-                y = 50;
+                currentY = 50;
+
+                // Redraw headers on new page
+                doc.fontSize(10).font('Helvetica-Bold');
+                doc.text('Date', startX, currentY);
+                doc.text('Item', startX + 80, currentY);
+                doc.text('Price', startX + 250, currentY);
+                doc.text('By', startX + 330, currentY);
+                doc.moveDown();
+                currentY = doc.y;
+
+                if (fs.existsSync(fontPath)) {
+                    doc.font('Bengali');
+                } else {
+                    doc.font('Helvetica');
+                }
+                doc.fontSize(9);
             }
 
-            doc.fontSize(9).text(new Date(expense.expense_date).toLocaleDateString(), 50, y);
-            doc.text(expense.item_name, 120, y);
-            doc.text(`৳${expense.price}`, 300, y);
-            doc.text(expense.purchased_by_name, 380, y);
-            
-            y += 20;
-            doc.y = y;
+            const date = new Date(expense.expense_date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+
+            doc.text(date, startX, currentY);
+            doc.text(expense.item_name.substring(0, 25), startX + 80, currentY);
+            doc.text(formatCurrency(expense.price), startX + 250, currentY);
+            doc.text(expense.purchased_by_name, startX + 330, currentY);
+
+            currentY += 20;
+            doc.y = currentY;
         });
 
         // Total
+        const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
         doc.moveDown();
-        doc.fontSize(11).font('Helvetica-Bold')
-           .text(`Total: ৳${expenses.reduce((sum, e) => sum + parseFloat(e.price), 0)}`, { align: 'right' });
+        doc.fontSize(11).font('Bengali')
+            .text(`Total: ${formatCurrency(totalExpense)}`, { align: 'right' });
 
         // Footer
         doc.fontSize(8).font('Helvetica')
-           .text(`Generated on: ${new Date().toLocaleString()}`, 50, 750, { align: 'center' });
+            .text(`Generated on: ${new Date().toLocaleString()}`, 50, 750, { align: 'center' });
 
         doc.end();
 
     } catch (error) {
+        console.error('PDF export error:', error);
         res.status(500).json({ error: error.message });
     }
 };
