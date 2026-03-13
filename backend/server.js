@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import messRoutes from './routes/mess.routes.js';
+import authRoutes from './routes/auth.routes.js';
+
 
 dotenv.config();
 
@@ -18,6 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api', messRoutes);
+app.use('/api/auth', authRoutes);  
+
 
 // Health check route
 app.get('/health', (req, res) => {

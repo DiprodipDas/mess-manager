@@ -37,4 +37,35 @@ export const calculationService = {
     getMonthlySummary: (year, month) => api.get(`/calculate/${year}/${month}`),
 };
 
+
+// Add these to your existing api.js
+
+export const guestMealService = {
+    getAll: () => api.get('/guest-meals'),
+    add: (data) => api.post('/guest-meals', data),
+    markAsPaid: (id) => api.put(`/guest-meals/${id}/pay`),
+};
+
+export const notificationService = {
+    getAll: () => api.get('/notifications'),
+    sendReminder: (userId, amount) => api.post('/notifications/reminder', { userId, amount }),
+    sendBulkReminders: () => api.post('/notifications/bulk-reminders'),
+    markAsRead: (id) => api.put(`/notifications/${id}/read`),
+};
+
+export const exportService = {
+    toExcel: (year, month, type) => api.get('/export/excel', { 
+        params: { year, month, type },
+        responseType: 'blob' 
+    }),
+    toPDF: (year, month) => api.get('/export/pdf', { 
+        params: { year, month },
+        responseType: 'blob' 
+    }),
+};
+
+export const analyticsService = {
+    getAnalytics: (timeframe) => api.get('/analytics', { params: { timeframe } }),
+};
+
 export default api;
