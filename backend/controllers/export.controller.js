@@ -19,8 +19,7 @@ export const exportToExcel = async (req, res) => {
         workbook.creator = 'Mess Manager';
         workbook.created = new Date();
 
-        // Add summary sheet
-        const summarySheet = workbook.addWorksheet('Summary');
+        // ============= GET ALL DATA =============
 
         // Get summary data
         const [summary] = await pool.query(
@@ -28,71 +27,189 @@ export const exportToExcel = async (req, res) => {
             [monthYear]
         );
 
-        // Add title
-        summarySheet.mergeCells('A1:E1');
-        const titleRow = summarySheet.getRow(1);
-        titleRow.getCell(1).value = `Mess Report - ${monthYear}`;
-        titleRow.getCell(1).font = { size: 16, bold: true };
-        titleRow.getCell(1).alignment = { horizontal: 'center' };
+        // Get all expenses with details
+        const [expenses] = await pool.query(
+            `SELECT e.*, u.name as purchased_by_name 
+             FROM expenses e
+             JOIN users u ON e.purchased_by = u.id
+             WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
+             ORDER BY e.expense_date DESC, e.id DESC`,
+            [monthYear]
+        );
 
-        // Add headers
-        summarySheet.addRow([]);
-        summarySheet.addRow(['Metric', 'Value']);
-        summarySheet.getRow(3).font = { bold: true };
+        // Get user meal counts
+        const [userSummary] = await pool.query(
+            `SELECT u.name, COUNT(m.id) as meal_count
+             FROM users u
+             LEFT JOIN meals m ON u.id = m.user_id AND DATE_FORMAT(m.meal_date, '%Y-%m') = ?
+             WHERE u.is_active = true
+             GROUP BY u.id, u.name
+             ORDER BY u.name`,
+            [monthYear]
+        );
 
-        if (summary.length > 0) {
-            summarySheet.addRow(['Total Meals', summary[0].total_meals]);
-            summarySheet.addRow(['Total Expense', summary[0].total_expense]);
-            summarySheet.addRow(['Meal Rate', summary[0].meal_rate]);
-        }
+        // Calculate totals
+        const totalMeals = userSummary.reduce((sum, u) => sum + u.meal_count, 0);
+        const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
+        const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
 
-        // Style the sheet
-        summarySheet.columns.forEach(column => {
-            column.width = 20;
+        // Format currency helper
+        const formatCurrency = (amount) => {
+            return `৳${parseFloat(amount).toFixed(2)}`;
+        };
+
+        // ============= MAIN REPORT SHEET =============
+        const sheet = workbook.addWorksheet('Monthly Report');
+
+        // Set column widths
+        sheet.columns = [
+            { width: 15 }, // Date
+            { width: 35 }, // Item
+            { width: 15 }, // Price
+            { width: 20 }  // By
+        ];
+
+        let currentRow = 1;
+
+        // ===== HEADER =====
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const titleCell = sheet.getCell(`A${currentRow}`);
+        titleCell.value = 'Mess Management Report';
+        titleCell.font = { size: 18, bold: true };
+        titleCell.alignment = { horizontal: 'center' };
+        currentRow++;
+
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const monthCell = sheet.getCell(`A${currentRow}`);
+        monthCell.value = `Month: ${monthYear}`;
+        monthCell.font = { size: 14 };
+        monthCell.alignment = { horizontal: 'center' };
+        currentRow += 2;
+
+        // ===== SUMMARY SECTION =====
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const summaryHeader = sheet.getCell(`A${currentRow}`);
+        summaryHeader.value = 'Summary';
+        summaryHeader.font = { size: 14, bold: true, underline: true };
+        currentRow++;
+
+        sheet.getCell(`A${currentRow}`).value = 'Total Meals:';
+        sheet.getCell(`A${currentRow}`).font = { bold: true };
+        sheet.getCell(`B${currentRow}`).value = totalMeals;
+        currentRow++;
+
+        sheet.getCell(`A${currentRow}`).value = 'Total Expense:';
+        sheet.getCell(`A${currentRow}`).font = { bold: true };
+        sheet.getCell(`B${currentRow}`).value = formatCurrency(totalExpense);
+        currentRow++;
+
+        sheet.getCell(`A${currentRow}`).value = 'Meal Rate:';
+        sheet.getCell(`A${currentRow}`).font = { bold: true };
+        sheet.getCell(`B${currentRow}`).value = formatCurrency(mealRate);
+        currentRow += 2;
+
+        // ===== MEMBER SUMMARY =====
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const memberHeader = sheet.getCell(`A${currentRow}`);
+        memberHeader.value = 'Member Summary';
+        memberHeader.font = { size: 14, bold: true, underline: true };
+        currentRow++;
+
+        userSummary.forEach(user => {
+            sheet.getCell(`A${currentRow}`).value = `${user.name}:`;
+            sheet.getCell(`B${currentRow}`).value = `${user.meal_count} meals`;
+            currentRow++;
+        });
+        currentRow += 2;
+
+        // ===== EXPENSE DETAILS =====
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const expenseHeader = sheet.getCell(`A${currentRow}`);
+        expenseHeader.value = 'Expense Details';
+        expenseHeader.font = { size: 14, bold: true, underline: true };
+        currentRow++;
+
+        // Table headers
+        sheet.getCell(`A${currentRow}`).value = 'Date';
+        sheet.getCell(`B${currentRow}`).value = 'Item';
+        sheet.getCell(`C${currentRow}`).value = 'Price';
+        sheet.getCell(`D${currentRow}`).value = 'By';
+
+        // Style headers
+        ['A', 'B', 'C', 'D'].forEach(col => {
+            const cell = sheet.getCell(`${col}${currentRow}`);
+            cell.font = { bold: true };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        currentRow++;
+
+        // Expense rows
+        expenses.forEach(expense => {
+            const date = new Date(expense.expense_date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\//g, '/');
+
+            sheet.getCell(`A${currentRow}`).value = date;
+            sheet.getCell(`B${currentRow}`).value = expense.item_name;
+            sheet.getCell(`C${currentRow}`).value = formatCurrency(expense.price);
+            sheet.getCell(`D${currentRow}`).value = expense.purchased_by_name;
+
+            // Add borders to all cells in this row
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet.getCell(`${col}${currentRow}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+
+            currentRow++;
         });
 
-        // Add expenses sheet
-        if (type === 'expenses' || !type) {
-            const expenseSheet = workbook.addWorksheet('Expenses');
+        // ===== TOTAL ROW =====
+        sheet.mergeCells(`A${currentRow}:B${currentRow}`);
+        sheet.getCell(`A${currentRow}`).value = 'Total:';
+        sheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
+        sheet.getCell(`C${currentRow}`).value = formatCurrency(totalExpense);
+        sheet.getCell(`C${currentRow}`).font = { bold: true, size: 12 };
 
-            const [expenses] = await pool.query(
-                `SELECT e.*, u.name as purchased_by_name 
-                 FROM expenses e
-                 JOIN users u ON e.purchased_by = u.id
-                 WHERE DATE_FORMAT(e.expense_date, '%Y-%m') = ?
-                 ORDER BY e.expense_date DESC`,
-                [monthYear]
-            );
+        // Style total row
+        ['A', 'B', 'C', 'D'].forEach(col => {
+            const cell = sheet.getCell(`${col}${currentRow}`);
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF0F0F0' }
+            };
+        });
 
-            expenseSheet.columns = [
-                { header: 'Date', key: 'date', width: 15 },
-                { header: 'Item', key: 'item', width: 25 },
-                { header: 'Quantity', key: 'quantity', width: 15 },
-                { header: 'Price', key: 'price', width: 15 },
-                { header: 'Purchased By', key: 'purchased_by', width: 20 },
-                { header: 'Notes', key: 'notes', width: 30 }
-            ];
-
-            expenseSheet.getRow(1).font = { bold: true };
-
-            expenses.forEach(expense => {
-                expenseSheet.addRow({
-                    date: new Date(expense.expense_date).toLocaleDateString(),
-                    item: expense.item_name,
-                    quantity: expense.quantity || '-',
-                    price: expense.price,
-                    purchased_by: expense.purchased_by_name,
-                    notes: expense.notes || '-'
-                });
-            });
-
-            // Add total row
-            const totalRow = expenseSheet.addRow({
-                item: 'TOTAL',
-                price: expenses.reduce((sum, e) => sum + parseFloat(e.price), 0)
-            });
-            totalRow.font = { bold: true };
-        }
+        // ===== FOOTER =====
+        currentRow += 2;
+        sheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        const footerCell = sheet.getCell(`A${currentRow}`);
+        footerCell.value = `Generated on: ${new Date().toLocaleString()}`;
+        footerCell.font = { size: 8, italic: true };
+        footerCell.alignment = { horizontal: 'center' };
 
         // Set response headers
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -103,6 +220,7 @@ export const exportToExcel = async (req, res) => {
         res.end();
 
     } catch (error) {
+        console.error('Excel export error:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -145,7 +263,7 @@ export const exportToPDF = async (req, res) => {
         doc.pipe(res);
 
         // 🔴 IMPORTANT: Register and use the Bengali font
-         const fontPath = path.join(__dirname, '..', 'fonts', 'NotoSansBengali-Regular.ttf');
+        const fontPath = path.join(__dirname, '..', 'fonts', 'NotoSansBengali-Regular.ttf');
 
         // Check if font exists
         if (fs.existsSync(fontPath)) {

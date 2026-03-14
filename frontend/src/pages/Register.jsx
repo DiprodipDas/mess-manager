@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, Phone, Users, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, Phone, Home, Users, ArrowRight } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -44,7 +44,7 @@ const Register = () => {
             password: formData.password,
             phone: formData.phone
         });
-        
+
         if (success) {
             navigate('/');
         }
@@ -80,7 +80,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your full name"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                             </div>
                             {errors.name && <p className="text-xs text-rose-200 mt-1">{errors.name}</p>}
@@ -97,7 +97,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your email"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
                             </div>
                             {errors.email && <p className="text-xs text-rose-200 mt-1">{errors.email}</p>}
@@ -114,12 +114,27 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your phone number"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 />
                             </div>
                             {errors.phone && <p className="text-xs text-rose-200 mt-1">{errors.phone}</p>}
                         </div>
-
+                        <div>
+                            <label className="block text-sm font-medium text-white/80 mb-2">
+                                Room Number
+                            </label>
+                            <div className="relative">
+                                <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
+                                <input
+                                    type="tel"
+                                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+                                    placeholder="Enter your Room number"
+                                    value={formData.room}
+                                    onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                                />
+                            </div>
+                            {errors.room && <p className="text-xs text-rose-200 mt-1">{errors.room}</p>}
+                        </div>
                         <div>
                             <label className="block text-sm font-medium text-white/80 mb-2">
                                 Password
@@ -131,7 +146,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Create a password"
                                     value={formData.password}
-                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 />
                             </div>
                             {errors.password && <p className="text-xs text-rose-200 mt-1">{errors.password}</p>}
@@ -148,7 +163,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Confirm your password"
                                     value={formData.confirmPassword}
-                                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                 />
                             </div>
                             {errors.confirmPassword && <p className="text-xs text-rose-200 mt-1">{errors.confirmPassword}</p>}

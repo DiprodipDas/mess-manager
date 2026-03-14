@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import messRoutes from './routes/mess.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import exportRoutes from './routes/export.routes.js';
+import analyticsRoutes from './routes/analytics.routes.js'; 
+import guestMealRoutes from './routes/guestMeal.routes.js';
 
 
 dotenv.config();
@@ -23,6 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', messRoutes);
 app.use('/api/auth', authRoutes);  
 app.use('/api/export', exportRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/guest-meals', guestMealRoutes);
 
 
 // Health check route
