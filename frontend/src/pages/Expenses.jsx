@@ -9,6 +9,7 @@ const Expenses = () => {
         quantity: '',
         price: '',
         purchased_by: '',
+        expense_date: new Date().toISOString().split('T')[0],
         notes: ''
     });
 
@@ -44,12 +45,11 @@ const Expenses = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const [year, month] = selectedMonth.split('-');
             await expenseService.add({
                 ...formData,
-                expense_date: `${selectedMonth}-15` // Use mid-month or current date
+                expense_date: formData.expense_date // Use mid-month or current date
             });
-            setFormData({ item_name: '', quantity: '', price: '', purchased_by: '', notes: '' });
+            setFormData({ item_name: '', quantity: '', price: '', purchased_by: '', expense_date: new Date().toISOString().split('T')[0] , notes: '' });
             loadExpenses();
         } catch (error) {
             console.error('Error adding expense:', error);
@@ -91,7 +91,7 @@ const Expenses = () => {
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.item_name}
-                                    onChange={(e) => setFormData({...formData, item_name: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
                                 />
                             </div>
 
@@ -103,7 +103,7 @@ const Expenses = () => {
                                         placeholder="e.g., 5kg"
                                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={formData.quantity}
-                                        onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                                     />
                                 </div>
                                 <div>
@@ -114,7 +114,7 @@ const Expenses = () => {
                                         step="0.01"
                                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={formData.price}
-                                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -125,7 +125,7 @@ const Expenses = () => {
                                     required
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.purchased_by}
-                                    onChange={(e) => setFormData({...formData, purchased_by: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, purchased_by: e.target.value })}
                                 >
                                     <option value="">Select Member</option>
                                     {users.map(user => (
@@ -135,12 +135,23 @@ const Expenses = () => {
                             </div>
 
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Expense Date</label>
+                                <input
+                                    type="date"
+                                    required
+                                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={formData.expense_date}
+                                    onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                                 <textarea
                                     rows="2"
                                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     value={formData.notes}
-                                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                                 />
                             </div>
 
