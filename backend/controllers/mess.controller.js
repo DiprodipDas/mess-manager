@@ -107,28 +107,65 @@ export const calculateMonthlySummary = async (req, res) => {
     try {
         const { year, month } = req.params;
         const monthYear = `${year}-${month}`;
-        
-        // Calculate total meals
-        const [mealRows] = await pool.query(
-            `SELECT COUNT(*) as total_meals 
+
+        // Get regular meals
+        const [regularMeals] = await pool.query(
+            `SELECT user_id, COUNT(*) as meal_count
              FROM meals 
-             WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?`,
+             WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+             GROUP BY user_id`,
             [monthYear]
         );
+
+        // Get guest meals (count these towards host's meals)
+        const [guestMeals] = await pool.query(
+            `SELECT host_member_id as user_id, COUNT(*) as meal_count
+             FROM guest_meals 
+             WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+             GROUP BY host_member_id`,
+            [monthYear]
+        );
+
+        // Combine regular and guest meals
+        const mealMap = new Map();
         
-        // Calculate total expenses
+        // Add regular meals
+        regularMeals.forEach(meal => {
+            mealMap.set(meal.user_id, meal.meal_count);
+        });
+        
+        // Add guest meals to host's count
+        guestMeals.forEach(guest => {
+            const currentCount = mealMap.get(guest.user_id) || 0;
+            mealMap.set(guest.user_id, currentCount + guest.meal_count);
+        });
+
+        // Get all users
+        const [users] = await pool.query(
+            `SELECT id, name FROM users WHERE is_active = true`
+        );
+
+        // Get total expenses
         const [expenseRows] = await pool.query(
             `SELECT SUM(price) as total_expense 
              FROM expenses 
              WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?`,
             [monthYear]
         );
-        
-        const totalMeals = mealRows[0].total_meals || 0;
-        const totalExpense = expenseRows[0].total_expense || 0;
+
+        const totalExpense = expenseRows[0]?.total_expense || 0;
+        const totalMeals = Array.from(mealMap.values()).reduce((a, b) => a + b, 0);
         const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
-        
-        // Save or update summary
+
+        // Prepare user summaries
+        const userSummaries = users.map(user => ({
+            id: user.id,
+            name: user.name,
+            meal_count: mealMap.get(user.id) || 0,
+            due: ((mealMap.get(user.id) || 0) * mealRate).toFixed(2)
+        }));
+
+        // Save to monthly_summary
         await pool.query(
             `INSERT INTO monthly_summary (month_year, total_meals, total_expense, meal_rate) 
              VALUES (?, ?, ?, ?)
@@ -138,30 +175,17 @@ export const calculateMonthlySummary = async (req, res) => {
              meal_rate = VALUES(meal_rate)`,
             [monthYear, totalMeals, totalExpense, mealRate]
         );
-        
-        // Calculate individual user summaries
-        const [userMeals] = await pool.query(
-            `SELECT u.id, u.name, COUNT(m.id) as meal_count
-             FROM users u
-             LEFT JOIN meals m ON u.id = m.user_id AND DATE_FORMAT(m.meal_date, '%Y-%m') = ?
-             WHERE u.is_active = true
-             GROUP BY u.id, u.name`,
-            [monthYear]
-        );
-        
-        const summary = {
+
+        res.json({
             month: monthYear,
             totalMeals,
             totalExpense,
             mealRate: mealRate.toFixed(2),
-            userSummaries: userMeals.map(user => ({
-                ...user,
-                due: (user.meal_count * mealRate).toFixed(2)
-            }))
-        };
-        
-        res.json(summary);
+            userSummaries
+        });
+
     } catch (error) {
+        console.error('Error calculating monthly summary:', error);
         res.status(500).json({ error: error.message });
     }
 };
