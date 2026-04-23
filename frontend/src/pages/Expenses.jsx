@@ -4,12 +4,22 @@ import { expenseService, userService } from '../services/api';
 const Expenses = () => {
     const [users, setUsers] = useState([]);
     const [expenses, setExpenses] = useState([]);
+
+    // Get today's date in local timezone
+    const getTodayDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const [formData, setFormData] = useState({
         item_name: '',
         quantity: '',
         price: '',
         purchased_by: '',
-        expense_date: new Date().toISOString().split('T')[0],
+        expense_date: getTodayDate(), // Use local date instead of ISO
         notes: ''
     });
 
@@ -17,6 +27,10 @@ const Expenses = () => {
     const [selectedMonth, setSelectedMonth] = useState(
         `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
     );
+
+    useEffect(() => {
+        console.log('Current expense_date value:', formData.expense_date);
+    }, [formData.expense_date]);
 
     useEffect(() => {
         loadUsers();
@@ -45,11 +59,30 @@ const Expenses = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Create date in local timezone and format as YYYY-MM-DD
+            const localDate = new Date(formData.expense_date);
+            const year = localDate.getFullYear();
+            const month = String(localDate.getMonth() + 1).padStart(2, '0');
+            const day = String(localDate.getDate()).padStart(2, '0');
+            const formattedDate = `${year}-${month}-${day}`;
+
+            console.log('Submitting expense with date:', formattedDate); // Debug
+
             await expenseService.add({
                 ...formData,
-                expense_date: formData.expense_date // Use mid-month or current date
+                expense_date: formattedDate
             });
-            setFormData({ item_name: '', quantity: '', price: '', purchased_by: '', expense_date: new Date().toISOString().split('T')[0] , notes: '' });
+
+            // Reset form
+            setFormData({
+                item_name: '',
+                quantity: '',
+                price: '',
+                purchased_by: '',
+                expense_date: new Date().toISOString().split('T')[0],
+                notes: ''
+            });
+
             loadExpenses();
         } catch (error) {
             console.error('Error adding expense:', error);

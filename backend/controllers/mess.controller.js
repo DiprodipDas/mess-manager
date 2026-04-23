@@ -71,17 +71,19 @@ export const addExpense = async (req, res) => {
 export const getMonthlyExpenses = async (req, res) => {
     try {
         const { year, month } = req.params;
-        const startDate = `${year}-${month}-01`;
-        const endDate = `${year}-${month}-31`;
+        
+        // Pad month to 2 digits
+        const paddedMonth = month.padStart(2, '0');
         
         const [rows] = await pool.query(
             `SELECT e.*, u.name as purchased_by_name 
              FROM expenses e 
              JOIN users u ON e.purchased_by = u.id 
-             WHERE e.expense_date BETWEEN ? AND ?
+             WHERE YEAR(e.expense_date) = ? AND MONTH(e.expense_date) = ?
              ORDER BY e.expense_date DESC`,
-            [startDate, endDate]
+            [year, paddedMonth]
         );
+        
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
