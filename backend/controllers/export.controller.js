@@ -38,14 +38,27 @@ export const exportToExcel = async (req, res) => {
         );
 
         // Get user meal counts
+        // Get user meal counts INCLUDING guest meals
         const [userSummary] = await pool.query(
-            `SELECT u.name, COUNT(m.id) as meal_count
-             FROM users u
-             LEFT JOIN meals m ON u.id = m.user_id AND DATE_FORMAT(m.meal_date, '%Y-%m') = ?
-             WHERE u.is_active = true
-             GROUP BY u.id, u.name
-             ORDER BY u.name`,
-            [monthYear]
+            `SELECT 
+        u.name,
+        COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
+     FROM users u
+     LEFT JOIN (
+         SELECT user_id, COUNT(*) as meal_count
+         FROM meals 
+         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+         GROUP BY user_id
+     ) rm ON u.id = rm.user_id
+     LEFT JOIN (
+         SELECT host_member_id, COUNT(*) as guest_count
+         FROM guest_meals 
+         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+         GROUP BY host_member_id
+     ) gm ON u.id = gm.host_member_id
+     WHERE u.is_active = true
+     ORDER BY u.name`,
+            [monthYear, monthYear]
         );
 
         // Calculate totals
@@ -246,12 +259,25 @@ export const exportToPDF = async (req, res) => {
         );
 
         const [userSummary] = await pool.query(
-            `SELECT u.name, COUNT(m.id) as meal_count
-             FROM users u
-             LEFT JOIN meals m ON u.id = m.user_id AND DATE_FORMAT(m.meal_date, '%Y-%m') = ?
-             WHERE u.is_active = true
-             GROUP BY u.id, u.name`,
-            [monthYear]
+            `SELECT 
+        u.name,
+        COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
+     FROM users u
+     LEFT JOIN (
+         SELECT user_id, COUNT(*) as meal_count
+         FROM meals 
+         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+         GROUP BY user_id
+     ) rm ON u.id = rm.user_id
+     LEFT JOIN (
+         SELECT host_member_id, COUNT(*) as guest_count
+         FROM guest_meals 
+         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+         GROUP BY host_member_id
+     ) gm ON u.id = gm.host_member_id
+     WHERE u.is_active = true
+     ORDER BY u.name`,
+            [monthYear, monthYear]
         );
 
         // Create PDF document

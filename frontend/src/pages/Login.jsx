@@ -114,7 +114,7 @@ const Login = () => {
                 {/* Demo credentials */}
                 <div className="mt-6 text-center">
                     <p className="text-xs text-white/60">
-                        Demo: admin@mess.com / password123
+                        All Right Reserved by <span className="font-bold">Diprodip Das</span>
                     </p>
                 </div>
             </div>

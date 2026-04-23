@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// Use environment variable or fallback to localhost for development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -9,15 +10,12 @@ const api = axios.create({
     },
 });
 
-// Add token to every request automatically
+// Add token to every request
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('✅ Token added to request:', config.url);
-        } else {
-            console.log('⚠️ No token found for request:', config.url);
         }
         return config;
     },

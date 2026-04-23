@@ -3,6 +3,8 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
@@ -22,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
     const loadUser = async () => {
         try {
-            const response = await axios.get('http://localhost:5000/api/auth/profile', {
+            const response = await axios.get(`${API_URL}/auth/profile`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setUser(response.data);
@@ -37,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/login', {
+            const response = await axios.post(`${API_URL}/auth/login`, {
                 email, password
             });
             
@@ -56,7 +58,7 @@ export const AuthProvider = ({ children }) => {
 
     const register = async (userData) => {
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', userData);
+            const response = await axios.post(`${API_URL}/auth/register`, userData);
             
             const { token, user } = response.data;
             localStorage.setItem('token', token);
