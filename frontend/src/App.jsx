@@ -15,6 +15,7 @@ import GuestMeals from './pages/GuestMeals';
 import Notifications from './pages/Notifications';
 import ExportReports from './pages/ExportReports';
 import Analytics from './pages/Analytics';
+import FixedBills from './pages/FixedBills';
 
 // Components
 import Layout from './components/Layout';
@@ -48,6 +49,7 @@ function AppContent() {
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="export" element={<ExportReports />} />
                 <Route path="analytics" element={<Analytics />} />
+                <Route path="fixed-bills" element={<FixedBills />} />
             </Route>
         </Routes>
     );

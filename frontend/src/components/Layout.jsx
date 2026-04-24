@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { 
     LayoutDashboard, 
-    Users, 
+    Users,
+    DollarSign, 
     Utensils, 
     Receipt, 
     BarChart3,
@@ -20,6 +21,7 @@ const navigation = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Members', path: '/users', icon: Users },
     { name: 'Meals', path: '/meals', icon: Utensils },
+    { name: 'Fixed Bills', path: '/fixed-bills', icon: DollarSign },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
     { name: 'Reports', path: '/reports', icon: BarChart3 },
     { name: 'Guest Meals', path: '/guest-meals', icon: UserPlus },

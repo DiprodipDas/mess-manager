@@ -79,6 +79,15 @@ export const exportService = {
     }),
 };
 
+export const fixedBillService = {
+    getAll: () => api.get('/fixed-bills'),
+    getById: (id) => api.get(`/fixed-bills/${id}`),
+    add: (data) => api.post('/fixed-bills', data),
+    update: (id, data) => api.put(`/fixed-bills/${id}`, data),
+    delete: (id) => api.delete(`/fixed-bills/${id}`),
+    getMonthlyTotal: () => api.get('/fixed-bills/monthly-total'),
+};
+
 export const analyticsService = {
     getAnalytics: (timeframe) => api.get('/analytics', { params: { timeframe } }),
 };

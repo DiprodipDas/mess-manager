@@ -6,6 +6,8 @@ import authRoutes from './routes/auth.routes.js';
 import exportRoutes from './routes/export.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js'; 
 import guestMealRoutes from './routes/guestMeal.routes.js';
+import fixedBillRoutes from './routes/fixedBill.routes.js';
+
 
 
 dotenv.config();
@@ -29,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/guest-meals', guestMealRoutes);
+app.use('/api/fixed-bills', fixedBillRoutes);
 
 
 // Health check route
