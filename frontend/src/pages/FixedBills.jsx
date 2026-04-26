@@ -354,23 +354,7 @@ const FixedBills = () => {
                 )}
             </div>
 
-            {/* Info Card */}
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
-                <div className="flex items-start space-x-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                        <h3 className="font-semibold text-amber-800">Important Note</h3>
-                        <p className="text-sm text-amber-700 mt-1">
-                            Fixed bills (rent, utilities, salary, etc.) are tracked separately for accounting purposes 
-                            and <strong className="font-semibold">DO NOT affect the meal rate calculation</strong>. 
-                            The meal rate is calculated based only on bazar (food) expenses.
-                        </p>
-                        <p className="text-sm text-amber-700 mt-2">
-                            💡 These are <strong>monthly recurring costs</strong>. Each bill amount is charged once per month.
-                        </p>
-                    </div>
-                </div>
-            </div>
+          
         </div>
     );
 };

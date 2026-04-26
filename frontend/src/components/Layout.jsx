@@ -13,6 +13,7 @@ import {
     PieChart,
     LogOut,
     Menu,
+    Calculator,
     X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +27,7 @@ const navigation = [
     { name: 'Reports', path: '/reports', icon: BarChart3 },
     { name: 'Guest Meals', path: '/guest-meals', icon: UserPlus },
     { name: 'Notifications', path: '/notifications', icon: Bell },
+    { name: 'Member Summary', path: '/member-summary', icon: Calculator },
     { name: 'Export', path: '/export', icon: FileText },
     { name: 'Analytics', path: '/analytics', icon: PieChart },
 ];

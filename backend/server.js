@@ -7,6 +7,7 @@ import exportRoutes from './routes/export.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js'; 
 import guestMealRoutes from './routes/guestMeal.routes.js';
 import fixedBillRoutes from './routes/fixedBill.routes.js';
+import memberExpenseRoutes from './routes/memberExpense.routes.js';
 
 
 
@@ -32,6 +33,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/guest-meals', guestMealRoutes);
 app.use('/api/fixed-bills', fixedBillRoutes);
+app.use('/api/member-expenses', memberExpenseRoutes);
 
 
 // Health check route

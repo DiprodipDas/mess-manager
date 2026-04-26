@@ -92,6 +92,11 @@ export const analyticsService = {
     getAnalytics: (timeframe) => api.get('/analytics', { params: { timeframe } }),
 };
 
+export const memberExpenseService = {
+    calculate: (year, month) => api.get(`/member-expenses/calculate/${year}/${month}`),
+    getByMonth: (year, month) => api.get(`/member-expenses/${year}/${month}`),
+};
+
 
 
 
