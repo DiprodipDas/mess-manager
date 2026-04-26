@@ -2,11 +2,11 @@ import pool from '../config/db.config.js';
 import bcrypt from 'bcryptjs';
 
 class User {
-    static async create({ name, email, password, phone, role = 'member' }) {
+    static async create({ name, email, password, phone, role = 'member', room_number, individual_rent }) {
         const hashedPassword = await bcrypt.hash(password, 10);
         const [result] = await pool.query(
-            'INSERT INTO users (name, email, password, phone, role) VALUES (?, ?, ?, ?, ?)',
-            [name, email, hashedPassword, phone, role]
+            'INSERT INTO users (name, email, password, phone, role, room_number, individual_rent) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [name, email, hashedPassword, phone, role, room_number || null, individual_rent || 0]
         );
         return result.insertId;
     }

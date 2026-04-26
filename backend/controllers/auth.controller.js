@@ -17,7 +17,7 @@ export const register = async (req, res) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, room_number, individual_rent } = req.body;
 
         // Check if user exists
         const existingUser = await User.findByEmail(email);
@@ -25,8 +25,16 @@ export const register = async (req, res) => {
             return res.status(400).json({ error: 'Email already registered' });
         }
 
-        // Create user
-        const userId = await User.create({ name, email, password, phone });
+        // Create user with room number and individual rent
+        const userId = await User.create({
+            name,
+            email,
+            password,
+            phone,
+            room_number: room_number || null,
+            individual_rent: individual_rent || 0
+        });
+
         const user = await User.findById(userId);
 
         // Generate token
@@ -38,6 +46,7 @@ export const register = async (req, res) => {
             user
         });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ error: error.message });
     }
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, Phone, Home, Users, ArrowRight } from 'lucide-react';
+import { User, Mail, Lock, Phone, Home, DollarSign, ArrowRight } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -9,7 +9,9 @@ const Register = () => {
         email: '',
         password: '',
         confirmPassword: '',
-        phone: ''
+        phone: '',
+        room_number: '',        // Add room number
+        individual_rent: ''     // Add individual rent
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -26,6 +28,7 @@ const Register = () => {
             newErrors.confirmPassword = 'Passwords do not match';
         }
         if (!formData.phone) newErrors.phone = 'Phone number is required';
+        if (!formData.individual_rent) newErrors.individual_rent = 'Monthly rent amount is required';
         return newErrors;
     };
 
@@ -42,9 +45,11 @@ const Register = () => {
             name: formData.name,
             email: formData.email,
             password: formData.password,
-            phone: formData.phone
+            phone: formData.phone,
+            room_number: formData.room_number,
+            individual_rent: parseFloat(formData.individual_rent)
         });
-
+        
         if (success) {
             navigate('/');
         }
@@ -61,7 +66,7 @@ const Register = () => {
             <div className="relative w-full max-w-md">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl shadow-2xl mb-4">
-                        <Users className="w-10 h-10 text-white" />
+                        <DollarSign className="w-10 h-10 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
                     <p className="text-white/80">Join your mess community</p>
@@ -80,7 +85,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your full name"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                                 />
                             </div>
                             {errors.name && <p className="text-xs text-rose-200 mt-1">{errors.name}</p>}
@@ -97,7 +102,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your email"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                                 />
                             </div>
                             {errors.email && <p className="text-xs text-rose-200 mt-1">{errors.email}</p>}
@@ -114,27 +119,55 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Enter your phone number"
                                     value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                 />
                             </div>
                             {errors.phone && <p className="text-xs text-rose-200 mt-1">{errors.phone}</p>}
                         </div>
+
+                        {/* Room Number Field - NEW */}
                         <div>
                             <label className="block text-sm font-medium text-white/80 mb-2">
-                                Room Number
+                                <div className="flex items-center space-x-2">
+                                    <Home className="w-4 h-4" />
+                                    <span>Room Number (Optional)</span>
+                                </div>
                             </label>
                             <div className="relative">
-                                <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/60" />
                                 <input
-                                    type="tel"
-                                    className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
-                                    placeholder="Enter your Room number"
-                                    value={formData.room}
-                                    onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                                    type="text"
+                                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+                                    placeholder="e.g., Room 101, 2nd Floor"
+                                    value={formData.room_number}
+                                    onChange={(e) => setFormData({...formData, room_number: e.target.value})}
                                 />
                             </div>
-                            {errors.room && <p className="text-xs text-rose-200 mt-1">{errors.room}</p>}
                         </div>
+
+                        {/* Individual Rent Field - NEW */}
+                        <div>
+                            <label className="block text-sm font-medium text-white/80 mb-2">
+                                <div className="flex items-center space-x-2">
+                                    <DollarSign className="w-4 h-4" />
+                                    <span>Monthly Room Rent (৳)</span>
+                                </div>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60">৳</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+                                    placeholder="e.g., 3500"
+                                    value={formData.individual_rent}
+                                    onChange={(e) => setFormData({...formData, individual_rent: e.target.value})}
+                                />
+                            </div>
+                            <p className="text-xs text-white/50 mt-1">Your monthly rent amount based on your room</p>
+                            {errors.individual_rent && <p className="text-xs text-rose-200 mt-1">{errors.individual_rent}</p>}
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-white/80 mb-2">
                                 Password
@@ -146,7 +179,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Create a password"
                                     value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
                                 />
                             </div>
                             {errors.password && <p className="text-xs text-rose-200 mt-1">{errors.password}</p>}
@@ -163,7 +196,7 @@ const Register = () => {
                                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
                                     placeholder="Confirm your password"
                                     value={formData.confirmPassword}
-                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                                 />
                             </div>
                             {errors.confirmPassword && <p className="text-xs text-rose-200 mt-1">{errors.confirmPassword}</p>}
