@@ -17,6 +17,7 @@ import ExportReports from './pages/ExportReports';
 import Analytics from './pages/Analytics';
 import FixedBills from './pages/FixedBills';
 import MemberSummary from './pages/MemberSummary';
+import DeveloperProfile from './pages/DeveloperProfile';
 
 // Components
 import Layout from './components/Layout';
@@ -52,6 +53,7 @@ function AppContent() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="fixed-bills" element={<FixedBills />} />
                 <Route path="member-summary" element={<MemberSummary />} />
+                <Route path="developer" element={<DeveloperProfile />} />
             </Route>
         </Routes>
     );
