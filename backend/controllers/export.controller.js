@@ -37,27 +37,28 @@ export const exportToExcel = async (req, res) => {
             [monthYear]
         );
 
-        // Get user meal counts
         // Get user meal counts INCLUDING guest meals
         const [userSummary] = await pool.query(
             `SELECT 
-        u.name,
-        COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
-     FROM users u
-     LEFT JOIN (
-         SELECT user_id, COUNT(*) as meal_count
-         FROM meals 
-         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
-         GROUP BY user_id
-     ) rm ON u.id = rm.user_id
-     LEFT JOIN (
-         SELECT host_member_id, COUNT(*) as guest_count
-         FROM guest_meals 
-         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
-         GROUP BY host_member_id
-     ) gm ON u.id = gm.host_member_id
-     WHERE u.is_active = true
-     ORDER BY u.name`,
+                u.id,
+                u.name,
+                u.individual_rent,
+                COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
+             FROM users u
+             LEFT JOIN (
+                 SELECT user_id, COUNT(*) as meal_count
+                 FROM meals 
+                 WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+                 GROUP BY user_id
+             ) rm ON u.id = rm.user_id
+             LEFT JOIN (
+                 SELECT host_member_id, COUNT(*) as guest_count
+                 FROM guest_meals 
+                 WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+                 GROUP BY host_member_id
+             ) gm ON u.id = gm.host_member_id
+             WHERE u.is_active = true
+             ORDER BY u.name`,
             [monthYear, monthYear]
         );
 
@@ -215,6 +216,142 @@ export const exportToExcel = async (req, res) => {
                 fgColor: { argb: 'FFF0F0F0' }
             };
         });
+        currentRow++;
+
+        // ============= NEW: MEMBER DETAILED BREAKDOWN TABLE =============
+        currentRow += 2;
+        sheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const memberDetailHeader = sheet.getCell(`A${currentRow}`);
+        memberDetailHeader.value = 'Member-wise Expense Breakdown';
+        memberDetailHeader.font = { size: 14, bold: true, underline: true };
+        memberDetailHeader.alignment = { horizontal: 'center' };
+        currentRow++;
+
+        // Get member purchase data (what they spent on bazar)
+        const [memberPurchases] = await pool.query(
+            `SELECT purchased_by as user_id, SUM(price) as total_purchased
+             FROM expenses 
+             WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
+             GROUP BY purchased_by`,
+            [monthYear]
+        );
+        const purchaseMap = {};
+        memberPurchases.forEach(m => {
+            purchaseMap[m.user_id] = parseFloat(m.total_purchased);
+        });
+
+        // Get total fixed bills for per member share
+        const [fixedBills] = await pool.query(
+            'SELECT SUM(bill_amount) as total FROM fixed_bills WHERE is_active = true'
+        );
+        const totalFixedBills = parseFloat(fixedBills[0]?.total || 0);
+        const memberCount = userSummary.length;
+        const fixedBillsPerMember = memberCount > 0 ? totalFixedBills / memberCount : 0;
+
+        // Table headers
+        const headers = ['Member Name', 'Meals', 'Meal Cost', 'Bazar Purchase', 'Food Overpayment', 'Individual Rent', 'Fixed Bills Share', 'Total Expense', 'Final Payable'];
+
+        for (let i = 0; i < headers.length; i++) {
+            const colLetter = String.fromCharCode(65 + i);
+            const cell = sheet.getCell(`${colLetter}${currentRow}`);
+            cell.value = headers[i];
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF7030A0' }
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+        currentRow++;
+
+        // Add member rows
+        let grandTotalExpense = 0;
+        let grandFinalPayable = 0;
+
+        for (const user of userSummary) {
+            const mealCost = user.meal_count * mealRate;
+            const bazarPurchase = purchaseMap[user.id] || 0;
+            const overpayment = bazarPurchase - mealCost;
+            const individualRent = parseFloat(user.individual_rent || 0);
+            const totalExpenseForMember = mealCost + individualRent + fixedBillsPerMember;
+            const finalPayable = totalExpenseForMember - overpayment;
+
+            grandTotalExpense += totalExpenseForMember;
+            grandFinalPayable += finalPayable;
+
+            sheet.getCell(`A${currentRow}`).value = user.name;
+            sheet.getCell(`B${currentRow}`).value = user.meal_count;
+            sheet.getCell(`C${currentRow}`).value = formatCurrency(mealCost);
+            sheet.getCell(`D${currentRow}`).value = formatCurrency(bazarPurchase);
+
+            if (overpayment > 0) {
+                sheet.getCell(`E${currentRow}`).value = `-${formatCurrency(overpayment)}`;
+            } else if (overpayment < 0) {
+                sheet.getCell(`E${currentRow}`).value = `+${formatCurrency(Math.abs(overpayment))}`;
+            } else {
+                sheet.getCell(`E${currentRow}`).value = formatCurrency(0);
+            }
+
+            sheet.getCell(`F${currentRow}`).value = formatCurrency(individualRent);
+            sheet.getCell(`G${currentRow}`).value = formatCurrency(fixedBillsPerMember);
+            sheet.getCell(`H${currentRow}`).value = formatCurrency(totalExpenseForMember);
+            sheet.getCell(`I${currentRow}`).value = formatCurrency(finalPayable);
+
+            // Style cells
+            for (let i = 0; i < headers.length; i++) {
+                const colLetter = String.fromCharCode(65 + i);
+                const cell = sheet.getCell(`${colLetter}${currentRow}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            }
+            currentRow++;
+        }
+
+        // Total row
+        sheet.getCell(`A${currentRow}`).value = 'TOTAL';
+        sheet.getCell(`A${currentRow}`).font = { bold: true };
+        sheet.getCell(`B${currentRow}`).value = userSummary.reduce((sum, u) => sum + u.meal_count, 0);
+        sheet.getCell(`H${currentRow}`).value = formatCurrency(grandTotalExpense);
+        sheet.getCell(`I${currentRow}`).value = formatCurrency(grandFinalPayable);
+
+        for (let i = 0; i < headers.length; i++) {
+            const colLetter = String.fromCharCode(65 + i);
+            const cell = sheet.getCell(`${colLetter}${currentRow}`);
+            cell.font = { bold: true };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        }
+        currentRow++;
+
+        // Set column widths for the detailed breakdown table
+        sheet.getColumn('A').width = 20;
+        sheet.getColumn('B').width = 10;
+        sheet.getColumn('C').width = 15;
+        sheet.getColumn('D').width = 18;
+        sheet.getColumn('E').width = 18;
+        sheet.getColumn('F').width = 18;
+        sheet.getColumn('G').width = 18;
+        sheet.getColumn('H').width = 18;
+        sheet.getColumn('I').width = 18;
 
         // ===== FOOTER =====
         currentRow += 2;
@@ -260,25 +397,53 @@ export const exportToPDF = async (req, res) => {
 
         const [userSummary] = await pool.query(
             `SELECT 
-        u.name,
-        COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
-     FROM users u
-     LEFT JOIN (
-         SELECT user_id, COUNT(*) as meal_count
-         FROM meals 
-         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
-         GROUP BY user_id
-     ) rm ON u.id = rm.user_id
-     LEFT JOIN (
-         SELECT host_member_id, COUNT(*) as guest_count
-         FROM guest_meals 
-         WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
-         GROUP BY host_member_id
-     ) gm ON u.id = gm.host_member_id
-     WHERE u.is_active = true
-     ORDER BY u.name`,
+                u.id,
+                u.name,
+                u.individual_rent,
+                COALESCE(rm.meal_count, 0) + COALESCE(gm.guest_count, 0) as meal_count
+             FROM users u
+             LEFT JOIN (
+                 SELECT user_id, COUNT(*) as meal_count
+                 FROM meals 
+                 WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+                 GROUP BY user_id
+             ) rm ON u.id = rm.user_id
+             LEFT JOIN (
+                 SELECT host_member_id, COUNT(*) as guest_count
+                 FROM guest_meals 
+                 WHERE DATE_FORMAT(meal_date, '%Y-%m') = ?
+                 GROUP BY host_member_id
+             ) gm ON u.id = gm.host_member_id
+             WHERE u.is_active = true
+             ORDER BY u.name`,
             [monthYear, monthYear]
         );
+
+        // Get member purchase data (what they spent on bazar)
+        const [memberPurchases] = await pool.query(
+            `SELECT purchased_by as user_id, SUM(price) as total_purchased
+             FROM expenses 
+             WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?
+             GROUP BY purchased_by`,
+            [monthYear]
+        );
+        const purchaseMap = {};
+        memberPurchases.forEach(m => {
+            purchaseMap[m.user_id] = parseFloat(m.total_purchased);
+        });
+
+        // Get total fixed bills for per member share
+        const [fixedBills] = await pool.query(
+            'SELECT SUM(bill_amount) as total FROM fixed_bills WHERE is_active = true'
+        );
+        const totalFixedBills = parseFloat(fixedBills[0]?.total || 0);
+        const memberCount = userSummary.length;
+        const fixedBillsPerMember = memberCount > 0 ? totalFixedBills / memberCount : 0;
+
+        // Calculate totals
+        const totalMeals = userSummary.reduce((sum, u) => sum + u.meal_count, 0);
+        const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
+        const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
 
         // Create PDF document
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -288,33 +453,28 @@ export const exportToPDF = async (req, res) => {
 
         doc.pipe(res);
 
-        // 🔴 IMPORTANT: Register and use the Bengali font
+        // Register Bengali font
         const fontPath = path.join(__dirname, '..', 'fonts', 'NotoSansBengali-Regular.ttf');
-
-        // Check if font exists
         if (fs.existsSync(fontPath)) {
-            console.log('✅ Bengali font found, registering...');
             doc.registerFont('Bengali', fontPath);
             doc.font('Bengali');
         } else {
-            console.log('⚠️ Bengali font not found, using Helvetica');
             doc.font('Helvetica');
         }
 
-        // Helper function to format currency properly
         const formatCurrency = (amount) => {
             const num = parseFloat(amount);
-            if (isNaN(num)) return '৳0.00';
-            // Use 'Tk' as fallback if Bengali font fails
-            return `৳${num.toFixed(2)}`; // or use 'Tk' if you prefer: return `Tk ${num.toFixed(2)}`;
+            if (isNaN(num)) return '0.00';
+            // Use simple number format to avoid font issues
+            return `${num.toFixed(2)} Tk`;
         };
 
-        // Header
+        // ===== HEADER =====
         doc.fontSize(20).text('Mess Management Report', { align: 'center' });
         doc.fontSize(14).text(`Month: ${monthYear}`, { align: 'center' });
         doc.moveDown();
 
-        // Summary section
+        // ===== SUMMARY SECTION =====
         doc.fontSize(16).text('Summary', { underline: true });
         doc.moveDown(0.5);
 
@@ -323,19 +483,14 @@ export const exportToPDF = async (req, res) => {
             doc.text(`Total Expense: ${formatCurrency(summary[0].total_expense)}`);
             doc.text(`Meal Rate: ${formatCurrency(summary[0].meal_rate)}`);
         } else {
-            // If no summary, calculate from raw data
-            const totalMeals = userSummary.reduce((sum, u) => sum + u.meal_count, 0);
-            const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
-            const mealRate = totalMeals > 0 ? totalExpense / totalMeals : 0;
-
             doc.fontSize(12).text(`Total Meals: ${totalMeals}`);
             doc.text(`Total Expense: ${formatCurrency(totalExpense)}`);
             doc.text(`Meal Rate: ${formatCurrency(mealRate)}`);
         }
         doc.moveDown();
 
-        // Member summary
-        doc.fontSize(16).text('Member Summary', { underline: true });
+        // ===== Meal SUMMARY (Basic) =====
+        doc.fontSize(16).text('Meal Summary', { underline: true });
         doc.moveDown(0.5);
 
         userSummary.forEach(user => {
@@ -343,7 +498,7 @@ export const exportToPDF = async (req, res) => {
         });
         doc.moveDown();
 
-        // Expenses table
+        // ===== EXPENSE DETAILS TABLE =====
         doc.fontSize(16).text('Expense Details', { underline: true });
         doc.moveDown(0.5);
 
@@ -351,7 +506,7 @@ export const exportToPDF = async (req, res) => {
         const startX = 50;
         let currentY = doc.y;
 
-        doc.fontSize(10).font('Helvetica-Bold'); // Use Helvetica for headers
+        doc.fontSize(10).font('Helvetica-Bold');
         doc.text('Date', startX, currentY);
         doc.text('Item', startX + 80, currentY);
         doc.text('Price', startX + 250, currentY);
@@ -360,20 +515,16 @@ export const exportToPDF = async (req, res) => {
         doc.moveDown();
         currentY = doc.y;
 
-        // Table rows - switch back to Bengali font if available
         if (fs.existsSync(fontPath)) {
             doc.font('Bengali');
-        } else {
-            doc.font('Helvetica');
         }
         doc.fontSize(9);
 
-        expenses.forEach((expense, i) => {
+        expenses.forEach((expense) => {
             if (currentY > 700) {
                 doc.addPage();
                 currentY = 50;
 
-                // Redraw headers on new page
                 doc.fontSize(10).font('Helvetica-Bold');
                 doc.text('Date', startX, currentY);
                 doc.text('Item', startX + 80, currentY);
@@ -384,8 +535,6 @@ export const exportToPDF = async (req, res) => {
 
                 if (fs.existsSync(fontPath)) {
                     doc.font('Bengali');
-                } else {
-                    doc.font('Helvetica');
                 }
                 doc.fontSize(9);
             }
@@ -405,11 +554,110 @@ export const exportToPDF = async (req, res) => {
             doc.y = currentY;
         });
 
-        // Total
-        const totalExpense = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
+        // Total for expenses
+        const totalExpenseAmount = expenses.reduce((sum, e) => sum + parseFloat(e.price), 0);
         doc.moveDown();
-        doc.fontSize(11).font('Bengali')
-            .text(`Total: ${formatCurrency(totalExpense)}`, { align: 'right' });
+        doc.fontSize(11).font('Helvetica-Bold')
+            .text(`Total: ${formatCurrency(totalExpenseAmount)}`, { align: 'right' });
+
+        // ===== NEW PAGE: MEMBER DETAILED BREAKDOWN =====
+        doc.addPage();
+        doc.fontSize(16).text('Member-wise Expense Breakdown', { underline: true });
+        doc.moveDown();
+
+        // Table headers with proper spacing - adjusted positions
+        const tableStartX = 40;
+        let tableY = doc.y;
+
+        doc.fontSize(8).font('Helvetica-Bold');
+        doc.text('Member', tableStartX, tableY);
+        doc.text('Meals', tableStartX + 60, tableY);
+        doc.text('Meal Cost', tableStartX + 100, tableY);
+        doc.text('Bazar Purchase', tableStartX + 145, tableY);
+        doc.text('Overpayment', tableStartX + 205, tableY);
+        doc.text('Rent', tableStartX + 265, tableY);
+        doc.text('Fixed Bills', tableStartX + 310, tableY);
+        doc.text('Total Expense', tableStartX + 370, tableY);
+        doc.text('Final Payable', tableStartX + 440, tableY);
+
+        doc.moveDown();
+        tableY = doc.y;
+
+        if (fs.existsSync(fontPath)) {
+            doc.font('Bengali');
+        }
+        doc.fontSize(8);
+
+        let grandTotalExpense = 0;
+        let grandFinalPayable = 0;
+
+        for (const user of userSummary) {
+            if (tableY > 700) {
+                doc.addPage();
+                tableY = 50;
+
+                // Redraw headers
+                doc.fontSize(8).font('Helvetica-Bold');
+                doc.text('Member', tableStartX, tableY);
+                doc.text('Meals', tableStartX + 60, tableY);
+                doc.text('Meal Cost', tableStartX + 100, tableY);
+                doc.text('Bazar Purchase', tableStartX + 145, tableY);
+                doc.text('Overpayment', tableStartX + 205, tableY);
+                doc.text('Rent', tableStartX + 265, tableY);
+                doc.text('Fixed Bills', tableStartX + 310, tableY);
+                doc.text('Total Expense', tableStartX + 370, tableY);
+                doc.text('Final Payable', tableStartX + 440, tableY);
+                doc.moveDown();
+                tableY = doc.y;
+
+                if (fs.existsSync(fontPath)) {
+                    doc.font('Bengali');
+                }
+                doc.fontSize(8);
+            }
+            // Inside the for loop where you display each member's data
+            const mealCost = user.meal_count * mealRate;
+            const bazarPurchase = purchaseMap[user.id] || 0;
+            const overpayment = bazarPurchase - mealCost;
+            const individualRent = parseFloat(user.individual_rent || 0);
+            const totalExpenseForMember = mealCost + individualRent + fixedBillsPerMember;
+            const finalPayable = totalExpenseForMember - overpayment;
+
+            grandTotalExpense += totalExpenseForMember;
+            grandFinalPayable += finalPayable;
+
+            // Truncate long names
+            const memberName = user.name.length > 12 ? user.name.substring(0, 10) + '..' : user.name;
+
+            doc.text(memberName, tableStartX, tableY);
+            doc.text(user.meal_count.toString(), tableStartX + 60, tableY);
+            doc.text(formatCurrency(mealCost), tableStartX + 100, tableY);
+            doc.text(formatCurrency(bazarPurchase), tableStartX + 145, tableY);
+
+            // FIXED: Show correct sign for overpayment
+            if (overpayment > 0) {
+                // Positive: Member spent more than they ate - Mess owes them
+                doc.text(`-${formatCurrency(overpayment)}`, tableStartX + 205, tableY);
+            } else if (overpayment < 0) {
+                // Negative: Member ate more than they spent - They owe mess
+                doc.text(`+${formatCurrency(Math.abs(overpayment))}`, tableStartX + 205, tableY);
+            } else {
+                doc.text(formatCurrency(0), tableStartX + 205, tableY);
+            }
+
+            doc.text(formatCurrency(individualRent), tableStartX + 265, tableY);
+            doc.text(formatCurrency(fixedBillsPerMember), tableStartX + 310, tableY);
+            doc.text(formatCurrency(totalExpenseForMember), tableStartX + 370, tableY);
+            doc.text(formatCurrency(finalPayable), tableStartX + 440, tableY);
+
+            tableY += 18;
+            doc.y = tableY;
+        }
+
+        // Total row
+        doc.moveDown();
+        doc.fontSize(10).font('Helvetica-Bold')
+            .text(`Total Final Payable: ${formatCurrency(grandFinalPayable)}`, { align: 'right' });
 
         // Footer
         doc.fontSize(8).font('Helvetica')

@@ -7,7 +7,6 @@ import {
   Utensils, 
   Moon, 
   Plus, 
-  UserPlus,
   Clock,
   CheckCircle,
   XCircle
@@ -22,9 +21,8 @@ const Meals = () => {
     );
     const [formData, setFormData] = useState({
         user_id: '',
-        meal_type: 'lunch',
-        is_guest: false,
-        guest_name: ''
+        meal_type: 'lunch'
+        // Removed: is_guest and guest_name
     });
 
     useEffect(() => {
@@ -55,12 +53,20 @@ const Meals = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!formData.user_id) {
+            // Optionally show a toast message
+            return;
+        }
+        
         try {
             await mealService.add({
-                ...formData,
-                meal_date: selectedDate
+                user_id: formData.user_id,
+                meal_type: formData.meal_type,
+                meal_date: selectedDate,
+                is_guest: false,        // Always false
+                guest_name: null         // Always null
             });
-            setFormData({ user_id: '', meal_type: 'lunch', is_guest: false, guest_name: '' });
+            setFormData({ user_id: '', meal_type: 'lunch' });
             loadMeals();
         } catch (error) {
             console.error('Error adding meal:', error);
@@ -163,7 +169,7 @@ const Meals = () => {
                 </div>
             </div>
 
-            {/* Main Content Grid - Now using full width */}
+            {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Add Meal Form - Left Column */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
@@ -225,37 +231,7 @@ const Meals = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
-                            <input
-                                type="checkbox"
-                                id="guest"
-                                className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                checked={formData.is_guest}
-                                onChange={(e) => setFormData({...formData, is_guest: e.target.checked})}
-                            />
-                            <label htmlFor="guest" className="text-sm font-medium text-gray-700">
-                                This is a guest meal
-                            </label>
-                        </div>
-
-                        {formData.is_guest && (
-                            <div className="animate-fadeIn">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    <div className="flex items-center space-x-2">
-                                        <UserPlus className="w-4 h-4 text-gray-400" />
-                                        <span>Guest Name</span>
-                                    </div>
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Enter guest name"
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                                    value={formData.guest_name}
-                                    onChange={(e) => setFormData({...formData, guest_name: e.target.value})}
-                                />
-                            </div>
-                        )}
+                        {/* REMOVED: Guest checkbox and guest name input */}
 
                         <button
                             type="submit"
@@ -321,11 +297,7 @@ const Meals = () => {
                                                                 </div>
                                                                 <div>
                                                                     <p className="font-medium text-gray-800">{meal.user_name}</p>
-                                                                    {meal.is_guest && (
-                                                                        <p className="text-xs text-gray-500">
-                                                                            Guest: {meal.guest_name}
-                                                                        </p>
-                                                                    )}
+                                                                    {/* REMOVED: Guest display - guests handled in GuestMeals component */}
                                                                 </div>
                                                             </div>
                                                             <span className="text-xs text-gray-400">
