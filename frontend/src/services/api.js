@@ -28,7 +28,10 @@ api.interceptors.request.use(
 export const userService = {
     getAll: () => api.get('/users'),
     create: (data) => api.post('/users', data),
+    update: (id, data) => api.put(`/users/${id}`, data), 
 };
+
+
 
 // Meal services
 export const mealService = {
@@ -69,13 +72,13 @@ export const notificationService = {
 };
 
 export const exportService = {
-    toExcel: (year, month, type) => api.get('/export/excel', { 
+    toExcel: (year, month, type) => api.get('/export/excel', {
         params: { year, month, type },
-        responseType: 'blob' 
+        responseType: 'blob'
     }),
-    toPDF: (year, month) => api.get('/export/pdf', { 
+    toPDF: (year, month) => api.get('/export/pdf', {
         params: { year, month },
-        responseType: 'blob' 
+        responseType: 'blob'
     }),
 };
 

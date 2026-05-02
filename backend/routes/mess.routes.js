@@ -7,7 +7,8 @@ import {
     addExpense,
     getMonthlyExpenses,
     addPayment,
-    calculateMonthlySummary
+    calculateMonthlySummary,
+    updateUser
 } from '../controllers/mess.controller.js';
 
 const router = express.Router();
@@ -15,6 +16,7 @@ const router = express.Router();
 // User routes
 router.get('/users', getAllUsers);
 router.post('/users', createUser);
+router.put('/users/:id', updateUser);
 
 // Meal routes
 router.post('/meals', addMeal);

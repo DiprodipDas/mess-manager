@@ -23,6 +23,31 @@ export const createUser = async (req, res) => {
     }
 };
 
+
+// Update user controler
+export const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, phone, room_number, individual_rent, join_date } = req.body;
+        
+        const [result] = await pool.query(
+            `UPDATE users 
+             SET name = ?, phone = ?, room_number = ?, individual_rent = ?, join_date = ?
+             WHERE id = ?`,
+            [name, phone, room_number, individual_rent, join_date, id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ message: 'User updated successfully' });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Meal Controllers
 export const addMeal = async (req, res) => {
     try {
