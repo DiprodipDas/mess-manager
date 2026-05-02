@@ -77,7 +77,7 @@ const Users = () => {
                         Mess Members
                     </h1>
                     <p className="text-gray-500 mt-1">
-                        {canEdit ? 'Click edit ✏️ to modify member details' : 'View-only mode'}
+                        {canEdit ? 'Click edit ✏️ to modify member details' : 'all members of the mess'}
                     </p>
                 </div>
                 <div className="text-sm text-gray-500">
