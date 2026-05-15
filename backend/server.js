@@ -8,6 +8,7 @@ import analyticsRoutes from './routes/analytics.routes.js';
 import guestMealRoutes from './routes/guestMeal.routes.js';
 import fixedBillRoutes from './routes/fixedBill.routes.js';
 import memberExpenseRoutes from './routes/memberExpense.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 
 
 
@@ -34,6 +35,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/guest-meals', guestMealRoutes);
 app.use('/api/fixed-bills', fixedBillRoutes);
 app.use('/api/member-expenses', memberExpenseRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Health check route

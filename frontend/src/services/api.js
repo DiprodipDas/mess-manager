@@ -100,7 +100,10 @@ export const memberExpenseService = {
     getByMonth: (year, month) => api.get(`/member-expenses/${year}/${month}`),
 };
 
-
+export const mealConfirmationService = {
+    getByDate: (date, mealType) => api.get(`/notifications/meal-confirmations?date=${date}&meal_type=${mealType}`),
+    sendPushReminders: (mealType, date) => api.post('/notifications/send-meal-reminder', { meal_type: mealType, date }),
+};
 
 
 

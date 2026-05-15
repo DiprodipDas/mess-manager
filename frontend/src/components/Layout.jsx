@@ -15,9 +15,11 @@ import {
     Menu,
     Calculator,
     UserCircle,
-    X
+    X,
+    ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import NotificationToggle from './NotificationToggle';
 
 const navigation = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -31,7 +33,9 @@ const navigation = [
     { name: 'Member Summary', path: '/member-summary', icon: Calculator },
     { name: 'Export', path: '/export', icon: FileText },
     { name: 'Analytics', path: '/analytics', icon: PieChart },
+    { name: 'Meal Confirmation', path: '/meal-confirmation', icon: ClipboardCheck },
     { name: 'Developer', path: '/developer', icon: UserCircle },
+    
 ];
 
 const Layout = () => {
@@ -130,6 +134,16 @@ const Layout = () => {
 
             {/* Main content */}
             <main className="lg:ml-64 min-h-screen">
+                {/* Header with Notification Toggle */}
+                <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                        <div className="flex items-center justify-end">
+                            {/* ✅ Notification Toggle added here */}
+                            <NotificationToggle />
+                        </div>
+                    </div>
+                </div>
+                
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <Outlet />
                 </div>
