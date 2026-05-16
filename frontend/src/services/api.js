@@ -103,6 +103,7 @@ export const memberExpenseService = {
 export const mealConfirmationService = {
     getByDate: (date, mealType) => api.get(`/notifications/meal-confirmations?date=${date}&meal_type=${mealType}`),
     sendPushReminders: (mealType, date) => api.post('/notifications/send-meal-reminder', { meal_type: mealType, date }),
+    updateDirect: (data) => api.post('/notifications/direct-confirmation', data),
 };
 
 

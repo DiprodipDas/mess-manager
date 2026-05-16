@@ -19,6 +19,7 @@ import FixedBills from './pages/FixedBills';
 import MemberSummary from './pages/MemberSummary';
 import DeveloperProfile from './pages/DeveloperProfile';
 import MealConfirmation from './pages/MealConfirmation';
+import DirectConfirmation from './pages/DirectConfirmation';
 
 // Components
 import Layout from './components/Layout';
@@ -55,7 +56,9 @@ function AppContent() {
                 <Route path="fixed-bills" element={<FixedBills />} />
                 <Route path="member-summary" element={<MemberSummary />} />
                 <Route path="meal-confirmation" element={<MealConfirmation />} />
+                <Route path="direct-confirmation" element={<DirectConfirmation />} />
                 <Route path="developer" element={<DeveloperProfile />} />
+                
             </Route>
         </Routes>
     );
