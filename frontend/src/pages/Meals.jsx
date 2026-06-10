@@ -9,8 +9,11 @@ import {
   Plus, 
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Trash2
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const Meals = () => {
     const [users, setUsers] = useState([]);
@@ -22,7 +25,16 @@ const Meals = () => {
     const [formData, setFormData] = useState({
         user_id: '',
         meal_type: 'lunch'
-        // Removed: is_guest and guest_name
+    });
+    const { isAdmin, isManager } = useAuth();
+    const canDelete = isAdmin || isManager;
+
+     // Delete confirmation modal state
+    const [deleteModal, setDeleteModal] = useState({
+        isOpen: false,
+        mealId: null,
+        memberName: '',
+        mealType: ''
     });
 
     useEffect(() => {
@@ -54,7 +66,7 @@ const Meals = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.user_id) {
-            // Optionally show a toast message
+            toast.error('Please select a member');
             return;
         }
         
@@ -63,15 +75,43 @@ const Meals = () => {
                 user_id: formData.user_id,
                 meal_type: formData.meal_type,
                 meal_date: selectedDate,
-                is_guest: false,        // Always false
-                guest_name: null         // Always null
+                is_guest: false,
+                guest_name: null
             });
             setFormData({ user_id: '', meal_type: 'lunch' });
             loadMeals();
+            toast.success('Meal added successfully');
         } catch (error) {
             console.error('Error adding meal:', error);
+            toast.error('Failed to add meal');
         }
     };
+
+    const handleDeleteMeal = (mealId, memberName, mealType) => {
+    setDeleteModal({
+        isOpen: true,
+        mealId: mealId,
+        memberName: memberName,
+        mealType: mealType
+    });
+};
+
+const confirmDelete = async () => {
+    const { mealId, memberName, mealType } = deleteModal;
+    try {
+        await mealService.delete(mealId);
+        loadMeals();
+        toast.success(`${memberName}'s ${mealType} deleted successfully`);
+        setDeleteModal({ isOpen: false, mealId: null, memberName: '', mealType: '' });
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        toast.error('Failed to delete meal');
+    }
+};
+
+const cancelDelete = () => {
+    setDeleteModal({ isOpen: false, mealId: null, memberName: '', mealType: '' });
+};
 
     const getMealIcon = (type) => {
         switch(type) {
@@ -231,8 +271,6 @@ const Meals = () => {
                             </div>
                         </div>
 
-                        {/* REMOVED: Guest checkbox and guest name input */}
-
                         <button
                             type="submit"
                             className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition-all hover:scale-[1.02] shadow-lg shadow-blue-600/25"
@@ -295,14 +333,25 @@ const Meals = () => {
                                                                 <div className="w-8 h-8 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                                                                     {meal.user_name?.charAt(0)}
                                                                 </div>
-                                                                <div>
+                                                                <div className="flex-1">
                                                                     <p className="font-medium text-gray-800">{meal.user_name}</p>
-                                                                    {/* REMOVED: Guest display - guests handled in GuestMeals component */}
+                                                                    <p className="text-xs text-gray-500 capitalize">{meal.meal_type}</p>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-xs text-gray-400">
-                                                                {new Date(meal.created_at).toLocaleTimeString()}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-gray-400">
+                                                                    {new Date(meal.created_at).toLocaleTimeString()}
+                                                                </span>
+                                                                {canDelete && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteMeal(meal.id, meal.user_name, meal.meal_type)}
+                                                                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                        title="Delete meal"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -343,6 +392,35 @@ const Meals = () => {
                     </button>
                 </div>
             </div>
+            {/* Delete Confirmation Modal */}
+{deleteModal.isOpen && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={cancelDelete} />
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+            </div>
+            <h3 className="text-xl font-bold text-center text-gray-800 mb-2">Delete Meal</h3>
+            <p className="text-gray-600 text-center mb-6">
+                Are you sure you want to delete <strong>{deleteModal.memberName}'s {deleteModal.mealType}</strong>?
+                <br />
+                <span className="text-sm text-gray-400">This action cannot be undone.</span>
+            </p>
+            <div className="flex gap-3">
+                <button onClick={cancelDelete} className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200">
+                    Cancel
+                </button>
+                <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+)}
         </div>
     );
 };

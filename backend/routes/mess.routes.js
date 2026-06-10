@@ -1,4 +1,5 @@
 import express from 'express';
+import { authenticate, authorize } from '../middleware/auth.middleware.js';
 import {
     getAllUsers,
     createUser,
@@ -8,7 +9,8 @@ import {
     getMonthlyExpenses,
     addPayment,
     calculateMonthlySummary,
-    updateUser
+    updateUser,
+    deleteMeal
 } from '../controllers/mess.controller.js';
 
 const router = express.Router();
@@ -21,6 +23,7 @@ router.put('/users/:id', updateUser);
 // Meal routes
 router.post('/meals', addMeal);
 router.get('/meals/daily/:date', getDailyMeals);
+router.delete('/meals/:id', authenticate, authorize('admin', 'manager'), deleteMeal);
 
 // Expense routes
 router.post('/expenses', addExpense);

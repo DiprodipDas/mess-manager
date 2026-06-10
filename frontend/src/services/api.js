@@ -37,6 +37,7 @@ export const userService = {
 export const mealService = {
     add: (data) => api.post('/meals', data),
     getDaily: (date) => api.get(`/meals/daily/${date}`),
+    delete: (id) => api.delete(`/meals/${id}`),
 };
 
 // Expense services

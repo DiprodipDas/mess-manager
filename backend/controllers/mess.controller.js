@@ -78,6 +78,26 @@ export const getDailyMeals = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+// New delete meal controller
+export const deleteMeal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const [result] = await pool.query(
+            'DELETE FROM meals WHERE id = ?',
+            [id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Meal not found' });
+        }
+        
+        res.json({ message: 'Meal deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting meal:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 // Expense Controllers
 export const addExpense = async (req, res) => {
