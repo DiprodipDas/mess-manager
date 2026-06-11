@@ -44,6 +44,8 @@ export const mealService = {
 export const expenseService = {
     add: (data) => api.post('/expenses', data),
     getMonthly: (year, month) => api.get(`/expenses/monthly/${year}/${month}`),
+    delete: (id) => api.delete(`/expenses/${id}`), 
+    update: (id, data) => api.put(`/expenses/${id}`, data),
 };
 
 // Payment services

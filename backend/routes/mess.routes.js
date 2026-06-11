@@ -10,7 +10,9 @@ import {
     addPayment,
     calculateMonthlySummary,
     updateUser,
-    deleteMeal
+    deleteMeal,
+    deleteExpense,
+    updateExpense
 } from '../controllers/mess.controller.js';
 
 const router = express.Router();
@@ -28,6 +30,8 @@ router.delete('/meals/:id', authenticate, authorize('admin', 'manager'), deleteM
 // Expense routes
 router.post('/expenses', addExpense);
 router.get('/expenses/monthly/:year/:month', getMonthlyExpenses);
+router.delete('/expenses/:id', authenticate, authorize('admin', 'manager'), deleteExpense);
+router.put('/expenses/:id', authenticate, authorize('admin', 'manager'), updateExpense);
 
 // Payment routes
 router.post('/payments', addPayment);

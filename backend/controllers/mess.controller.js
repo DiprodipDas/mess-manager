@@ -134,6 +134,49 @@ export const getMonthlyExpenses = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+// New delete expense controller
+export const deleteExpense = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const [result] = await pool.query(
+            'DELETE FROM expenses WHERE id = ?',
+            [id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Expense not found' });
+        }
+        
+        res.json({ message: 'Expense deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting expense:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+// New update expense controller
+export const updateExpense = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { item_name, quantity, price, purchased_by, expense_date, notes } = req.body;
+        
+        const [result] = await pool.query(
+            `UPDATE expenses 
+             SET item_name = ?, quantity = ?, price = ?, purchased_by = ?, expense_date = ?, notes = ?
+             WHERE id = ?`,
+            [item_name, quantity, price, purchased_by, expense_date, notes, id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Expense not found' });
+        }
+        
+        res.json({ message: 'Expense updated successfully' });
+    } catch (error) {
+        console.error('Error updating expense:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 // Payment Controllers
 export const addPayment = async (req, res) => {
