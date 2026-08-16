@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, LogIn, UtensilsCrossed, Eye, EyeOff } from 'lucide-react';
 
 // Import your SVG
-import messAnimation from '/Users/IT-PC/mess-management-app/frontend/src/assets/login.svg';
+import messAnimation from '../assets/login.svg';
 
 const Login = () => {
     const [email, setEmail] = useState('');
