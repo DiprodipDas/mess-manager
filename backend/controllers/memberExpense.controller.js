@@ -79,7 +79,7 @@ export const calculateMemberExpenses = async (req, res) => {
             const memberMealCount = memberData ? parseInt(memberData.total_meals) || 0 : 0;
             const mealCost = memberMealCount * mealRate;
             const individualRent = parseFloat(member.individual_rent) || 0;
-            const totalExpense = mealCost + individualRent + fixedBillsPerMember;
+            const totalExpense = individualRent + fixedBillsPerMember;
 
             return {
                 user_id: member.id,

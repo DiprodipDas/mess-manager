@@ -279,7 +279,7 @@ export const exportToExcel = async (req, res) => {
             const bazarPurchase = purchaseMap[user.id] || 0;
             const overpayment = bazarPurchase - mealCost;
             const individualRent = parseFloat(user.individual_rent || 0);
-            const totalExpenseForMember = mealCost + individualRent + fixedBillsPerMember;
+            const totalExpenseForMember = individualRent + fixedBillsPerMember;
             const finalPayable = totalExpenseForMember - overpayment;
 
             grandTotalExpense += totalExpenseForMember;
@@ -620,7 +620,7 @@ export const exportToPDF = async (req, res) => {
             const bazarPurchase = purchaseMap[user.id] || 0;
             const overpayment = bazarPurchase - mealCost;
             const individualRent = parseFloat(user.individual_rent || 0);
-            const totalExpenseForMember = mealCost + individualRent + fixedBillsPerMember;
+            const totalExpenseForMember = individualRent + fixedBillsPerMember;
             const finalPayable = totalExpenseForMember - overpayment;
 
             grandTotalExpense += totalExpenseForMember;
