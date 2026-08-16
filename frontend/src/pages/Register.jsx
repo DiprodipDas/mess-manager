@@ -129,7 +129,7 @@ const Register = () => {
                         />
                     </div>
                     <div className="text-center text-white">
-                        <h2 className="text-3xl font-bold mb-2">Join Engineer's House</h2>
+                        <h2 className="text-3xl font-bold mb-2">Join Engineer's Mess</h2>
                         <p className="text-white/50">Survive together, thrive together.</p>
                     </div>
                 </div>
@@ -141,14 +141,14 @@ const Register = () => {
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg mb-3">
                             <UtensilsCrossed className="w-8 h-8 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Engineer's House</h2>
+                        <h2 className="text-2xl font-bold text-white">Engineer's Mess</h2>
                         <p className="text-white/50 text-sm">Survive together, thrive together.</p>
                     </div>
 
-                    <div className="text-center lg:text-left mb-6">
+                    {/* <div className="text-center lg:text-left mb-6">
                         <h2 className="text-2xl lg:text-3xl font-bold text-white">Create Account</h2>
                         <p className="text-white/40 text-sm mt-1">Join your mess community</p>
-                    </div>
+                    </div> */}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Name */}
