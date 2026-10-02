@@ -7,7 +7,7 @@ import {
     deleteGuestMeal,
     getGuestStats
 } from '../controllers/guestMeal.controller.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate,authorize } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
@@ -19,6 +19,6 @@ router.get('/stats', getGuestStats);
 router.get('/host/:hostId', getGuestMealsByHost);
 router.post('/', addGuestMeal);
 router.put('/:id/pay', markAsPaid);
-router.delete('/:id', deleteGuestMeal);
+router.delete('/:id', authorize('admin', 'manager'), deleteGuestMeal); 
 
 export default router;

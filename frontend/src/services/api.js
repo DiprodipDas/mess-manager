@@ -65,6 +65,7 @@ export const guestMealService = {
     getAll: () => api.get('/guest-meals'),
     add: (data) => api.post('/guest-meals', data),
     markAsPaid: (id) => api.put(`/guest-meals/${id}/pay`),
+    delete: (id) => api.delete(`/guest-meals/${id}`),
 };
 
 export const notificationService = {
