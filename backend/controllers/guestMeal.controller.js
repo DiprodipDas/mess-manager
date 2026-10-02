@@ -48,13 +48,13 @@ export const addGuestMeal = async (req, res) => {
             [host_member_id, meal_date]
         );
 
-        // Get host's guest limit (default 300)
+        // Get host's guest limit (default 5)
         const [userLimit] = await pool.query(
             `SELECT guest_limit FROM users WHERE id = ?`,
             [host_member_id]
         );
 
-        const limit = userLimit[0]?.guest_limit || 300;
+        const limit = userLimit[0]?.guest_limit || 5;
         
         if (monthCount[0].count >= limit) {
             return res.status(400).json({ 
